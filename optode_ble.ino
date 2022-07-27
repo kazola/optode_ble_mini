@@ -2,46 +2,112 @@
 
 
 
-// these MUST be defined here, outside
-BLEService batteryService("180F");
-BLEUnsignedCharCharacteristic batteryLevelChar("2A19", BLERead | BLENotify);
+#define _SP   Serial.print
+#define _SPN  Serial.println
+#define _dW   digitalWrite
 
 
 
-int oldBatteryLevel = 0;
-long previousMillis = 0;
+// serial when developing = 1
+// serial when installed at optode = 0
+#define _SERIAL_ENABLE  0
+
+
+
+// must be defined here, outside
+BLEService svc("2323");
+BLEUnsignedCharCharacteristic char_out("2324", BLERead | BLENotify);
+BLECharacteristic  char_in("2325", BLERead | BLEWrite, 10);
+
+
+
+// pins
+#define PIN_DISPLAY_OUT   D10
+#define PIN_WIFI_OUT      D9
+#define PIN_DISPLAY_IN    A0
+#define PIN_WIFI_IN       A1
 
 
 
 void setup()
 {
-  Serial.begin(9600);
-  while (!Serial);
-
-  if (!BLE.begin())
-  {
-    Serial.println("starting BLE failed!");
-    while (1);
-  }
+    #if _SERIAL_ENABLE == 1
+        Serial.begin(9600);
+        while (!Serial);
+    #endif
 
 
-  // BLE services and chars
-  batteryService.addCharacteristic(batteryLevelChar);
-  BLE.addService(batteryService);
-  batteryLevelChar.writeValue(oldBatteryLevel);
+    // BLE hardware check
+    if (!BLE.begin())
+    {
+        _SPN("starting BLE failed!");
+        while (1);
+    }
 
 
-  // start BLE ADvertisement
-  BLE.setLocalName("BLE_optode_1");
-  BLE.setAdvertisedService(batteryService);
-  BLE.advertise();
-  Serial.println("Bluetooth device active, waiting for connections...");
-  Serial.println("my BLE MAC address is");
-  Serial.println(BLE.address());
+    // BLE services and characteristics
+    svc.addCharacteristic(char_out);
+    svc.addCharacteristic(char_in);
+    BLE.addService(svc);
 
 
-  // pins
-  pinMode(LED_BUILTIN, OUTPUT);
+    // BLE CONN (* 1.25) -> 800 = 1s, 100 = 125 ms
+    BLE.setConnectionInterval(100, 100);
+
+
+    // BLE ADV (* 0.625) -> 320 = 200 ms
+    BLE.setLocalName("BLE_optode_1");
+    BLE.setAdvertisedService(svc);
+    BLE.setAdvertisingInterval(160);
+    BLE.advertise();
+
+
+    // display initial info
+    _SP("my xiao BLE MAC address is: ");
+    _SPN(BLE.address());
+
+
+    // pins
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(PIN_DISPLAY_OUT, OUTPUT);
+}
+
+
+
+void _act_do()
+{
+    _dW(PIN_DISPLAY_OUT, 1);
+    delay(3000);
+    _dW(PIN_DISPLAY_OUT, 0);
+}
+
+
+
+void _act_wo()
+{
+    _dW(PIN_WIFI_OUT, 1);
+    delay(100);
+    _dW(PIN_WIFI_OUT, 0);
+}
+
+
+
+void _act_di()
+{
+    int a = analogRead(PIN_DISPLAY_IN);
+    _SP("adc display value: ");
+    _SPN(a);
+    char_out.writeValue(a > 512);
+}
+
+
+
+void _act_wi()
+{
+    int a = analogRead(PIN_WIFI_IN);
+    _SP("adc display value: ");
+    _SPN(a);
+    char_out.writeValue(a > 512);
 }
 
 
@@ -49,49 +115,62 @@ void setup()
 
 void loop()
 {
-  // wait for a Bluetooth® Low Energy central
-  BLEDevice central = BLE.central();
-
-
-  if (central)
-  {
-    Serial.print("Connected to central: ");
-    Serial.println(central.address());
-
-
-    // turn on the LED to indicate the connection:
-    digitalWrite(LED_BUILTIN, LOW);
-
-
-    // check the battery level every 200ms while central connected
-    while (central.connected())
+    BLEDevice central = BLE.central();
+    if (central)
     {
-      long currentMillis = millis();
-      if (currentMillis - previousMillis >= 200) {
-        previousMillis = currentMillis;
-        updateBatteryLevel();
-      }
-    }
+        _SP("\n\n\nConnected to central: ");
+        _SPN(central.address());
 
 
-    // when the central disconnects, turn off the LED:
-    digitalWrite(LED_BUILTIN, HIGH);
-    Serial.print("Disconnected from central: ");
-    Serial.println(central.address());
-  }
-}
+        // LED on indicates BLE connection
+        _dW(LED_BUILTIN, LOW);
 
 
+        // command loop
+        while (central.connected())
+        {
+            if (char_in.written())
+            {
+                // ignore
+                int len = char_in.valueLength();
+                if (len > 2)
+                {
+                  continue;
+                }
+        
+        
+                // get command and parse it
+                char v[10] = {0};
+                strncpy(v, (const char *)char_in.value(), len);
+                _SP("-> ");
+                _SPN(v);
+        
+        
+                // parse command
+                if (!strncmp("DO", v, len) || !strncmp("do", v, len))
+                {
+                    _act_do();
+                }
+                if (!strncmp("WO", v, len) || !strncmp("wo", v, len))
+                {
+                    _act_wo();
+                }
+                if (!strncmp("DI", v, len) || !strncmp("di", v, len))
+                {
+                    _act_di();
+                }
+                if (!strncmp("WI", v, len) || !strncmp("wi", v, len))
+                {
+                    _act_wi();
+                }
+                
+            }            
+        }
 
-void updateBatteryLevel()
-{
-  int battery = analogRead(A0);
-  int batteryLevel = map(battery, 0, 1023, 0, 100);
-  if (batteryLevel != oldBatteryLevel)
-  {
-    Serial.print("Battery Level % is now: ");
-    Serial.println(batteryLevel);
-    batteryLevelChar.writeValue(batteryLevel);
-    oldBatteryLevel = batteryLevel;
+
+        // BLE disconnection
+        _SP("Disconnected from central: ");
+        _SPN(central.address());
+        _dW(LED_BUILTIN, HIGH);
   }
 }
