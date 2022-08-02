@@ -8,15 +8,17 @@
 
 
 
+// --------------------------------------
 // serial when developing = 1
 // serial when installed at optode = 0
 #define _SERIAL_ENABLE  0
+// --------------------------------------
 
 
 
 // must be defined here, outside
 BLEService svc("2323");
-BLEUnsignedCharCharacteristic char_out("2324", BLERead | BLENotify);
+BLECharacteristic char_out("2324", BLERead | BLENotify, 10);
 BLECharacteristic  char_in("2325", BLERead | BLEWrite, 10);
 
 
@@ -97,7 +99,8 @@ void _act_di()
     int a = analogRead(PIN_DISPLAY_IN);
     _SP("adc display value: ");
     _SPN(a);
-    char_out.writeValue(a > 512);
+    if (a > 512) char_out.writeValue("dis_on");
+    else char_out.writeValue("dis_off");
 }
 
 
@@ -107,7 +110,27 @@ void _act_wi()
     int a = analogRead(PIN_WIFI_IN);
     _SP("adc display value: ");
     _SPN(a);
-    char_out.writeValue(a > 512);
+    if (a > 512) char_out.writeValue("wif_on");
+    else char_out.writeValue("wif_off");
+}
+
+
+
+void _act_led()
+{
+    char_out.writeValue("led_ok");
+  
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        _dW(LED_BUILTIN, HIGH);
+        delay(100);
+        _dW(LED_BUILTIN, LOW);
+        delay(100);
+    }
+    
+
+    // end up w/ LED on
+    _dW(LED_BUILTIN, LOW);
 }
 
 
@@ -122,21 +145,21 @@ void loop()
         _SPN(central.address());
 
 
-        // LED on indicates BLE connection
+        // on BLE connection, LED = LOW = shining
         _dW(LED_BUILTIN, LOW);
 
 
+        // -----------------
         // command loop
+        // -----------------
+        
         while (central.connected())
         {
             if (char_in.written())
             {
-                // ignore
+                // ignore bad commands
                 int len = char_in.valueLength();
-                if (len > 2)
-                {
-                  continue;
-                }
+                if (len > 2) continue;
         
         
                 // get command and parse it
@@ -162,6 +185,10 @@ void loop()
                 if (!strncmp("WI", v, len) || !strncmp("wi", v, len))
                 {
                     _act_wi();
+                }
+                if (!strncmp("L", v, 1))
+                {
+                    _act_led();
                 }
                 
             }            
