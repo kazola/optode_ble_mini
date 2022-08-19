@@ -2,17 +2,21 @@
 
 
 
-#define _SP   Serial.print
-#define _SPN  Serial.println
-#define _dW   digitalWrite
+
+// pins
+#define PIN_DISPLAY_OUT   D10
+#define PIN_WIFI_OUT      D9
+#define PIN_DISPLAY_IN    A0
+#define PIN_WIFI_IN       A1
 
 
-
-// --------------------------------------
-// serial when developing = 1
-// serial when installed at optode = 0
-#define _SERIAL_ENABLE  0
-// --------------------------------------
+// macros
+#define _SP                   Serial.print
+#define _SPN                  Serial.println
+#define _dW                   digitalWrite
+#define _SERIAL_INSTALLING_   0
+#define _SERIAL_DEVELOPING_   1
+#define _SERIAL_ENABLE        _SERIAL_INSTALLING_
 
 
 
@@ -23,61 +27,23 @@ BLECharacteristic  char_in("2325", BLERead | BLEWrite, 10);
 
 
 
-// pins
-#define PIN_DISPLAY_OUT   D10
-#define PIN_WIFI_OUT      D9
-#define PIN_DISPLAY_IN    A0
-#define PIN_WIFI_IN       A1
-
-
-
-void setup()
+void _build_name(char * s)
 {
-    #if _SERIAL_ENABLE == 1
-        Serial.begin(9600);
-        while (!Serial);
-    #endif
-
-
-    // BLE hardware check
-    if (!BLE.begin())
-    {
-        _SPN("starting BLE failed!");
-        while (1);
-    }
-
-
-    // BLE services and characteristics
-    svc.addCharacteristic(char_out);
-    svc.addCharacteristic(char_in);
-    BLE.addService(svc);
-
-
-    // BLE CONN (* 1.25) -> 800 = 1s, 100 = 125 ms
-    BLE.setConnectionInterval(100, 100);
-
-
-    // BLE ADV (* 0.625) -> 320 = 200 ms
-    BLE.setLocalName("BLE_optode_1");
-    BLE.setAdvertisedService(svc);
-    BLE.setAdvertisingInterval(160);
-    BLE.advertise();
-
-
-    // display initial info
-    _SP("my xiao BLE MAC address is: ");
-    _SPN(BLE.address());
-
-
-    // pins
-    pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(PIN_DISPLAY_OUT, OUTPUT);
+    const char * _m = BLE.address().c_str();
+    strncpy(s, "op_sc_", 6);
+    strncpy(s + 6, _m + 0, 2);
+    strncpy(s + 8, _m + 3, 2);
+    strncpy(s + 10, _m + 6, 2);
+    strncpy(s + 12, _m + 9, 2);
+    strncpy(s + 14, _m + 12, 2);
+    strncpy(s + 16, _m + 15, 2);
 }
 
 
 
 void _act_do()
 {
+    char_out.writeValue("do_ok");
     _dW(PIN_DISPLAY_OUT, 1);
     delay(3000);
     _dW(PIN_DISPLAY_OUT, 0);
@@ -87,6 +53,7 @@ void _act_do()
 
 void _act_wo()
 {
+    char_out.writeValue("wo_ok");
     _dW(PIN_WIFI_OUT, 1);
     delay(100);
     _dW(PIN_WIFI_OUT, 0);
@@ -135,13 +102,62 @@ void _act_led()
 
 
 
+void setup()
+{
+
+    // pins
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(PIN_DISPLAY_OUT, OUTPUT);
+    pinMode(PIN_WIFI_OUT, OUTPUT);
+    
+
+    // serial ON when at computer, OFF at field
+    #if _SERIAL_ENABLE == 1
+        Serial.begin(9600);
+        while (!Serial);
+    #endif
+
+
+    // hardware check
+    if (!BLE.begin())
+    {
+        _SPN("starting BLE failed!");
+        while (1);
+    }
+    _SP("BLE optode scan boot, my MAC is ");
+    _SPN(BLE.address());
+
+
+
+    // services and characteristics
+    svc.addCharacteristic(char_out);
+    svc.addCharacteristic(char_in);
+    BLE.addService(svc);
+
+
+    // CONN (* 1.25) -> 800 = 1s, 100 = 125 ms
+    BLE.setConnectionInterval(100, 100);
+
+
+    // ADV (* 0.625) -> 320 = 200 ms
+    char _name[20] = {0};
+    _build_name(_name);
+    BLE.setLocalName(_name);
+    BLE.setDeviceName(_name);
+    BLE.setAdvertisedService(svc);
+    BLE.setAdvertisingInterval(160);
+    BLE.advertise();
+}
+
+
+
 
 void loop()
 {
     BLEDevice central = BLE.central();
     if (central)
     {
-        _SP("\n\n\nConnected to central: ");
+        _SP("\n\n\nConnected to central ");
         _SPN(central.address());
 
 
@@ -170,23 +186,23 @@ void loop()
         
         
                 // parse command
-                if (!strncmp("DO", v, len) || !strncmp("do", v, len))
+                if (!strncmp("do", v, len))
                 {
                     _act_do();
                 }
-                if (!strncmp("WO", v, len) || !strncmp("wo", v, len))
+                if (!strncmp("wo", v, len))
                 {
                     _act_wo();
                 }
-                if (!strncmp("DI", v, len) || !strncmp("di", v, len))
+                if (!strncmp("di", v, len))
                 {
                     _act_di();
                 }
-                if (!strncmp("WI", v, len) || !strncmp("wi", v, len))
+                if (!strncmp("wi", v, len))
                 {
                     _act_wi();
                 }
-                if (!strncmp("L", v, 1))
+                if (!strncmp("l", v, 1))
                 {
                     _act_led();
                 }
@@ -196,7 +212,7 @@ void loop()
 
 
         // BLE disconnection
-        _SP("Disconnected from central: ");
+        _SP("Disconnected from central ");
         _SPN(central.address());
         _dW(LED_BUILTIN, HIGH);
   }
