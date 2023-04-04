@@ -1,6 +1,17 @@
+// -----------------------------------------------------------------------------------
+// src: https://wiki.seeedstudio.com/XIAO_BLE
+// needs installing
+//     - Arduino IDE
+//     - preferences, add board sources
+//         https://files.seeedstudio.com/arduino/package_seeeduino_boards_index.json
+//     - install board seeed nrf52 mbed
+//     - install library ArduinoBLE
+// -----------------------------------------------------------------------------------
+
+
+
+
 #include <ArduinoBLE.h>
-
-
 
 
 // pins
@@ -16,7 +27,7 @@
 #define _dW                   digitalWrite
 #define _SERIAL_INSTALLING_   0
 #define _SERIAL_DEVELOPING_   1
-#define _SERIAL_ENABLE        _SERIAL_INSTALLING_
+#define _SERIAL_ENABLE        _SERIAL_DEVELOPING_
 
 
 
@@ -30,7 +41,7 @@ BLECharacteristic  char_in("2325", BLERead | BLEWrite, 10);
 void _build_name(char * s)
 {
     const char * _m = BLE.address().c_str();
-    strncpy(s, "op_sc_", 6);
+    strncpy(s, "op_mi_", 6);
     strncpy(s + 6, _m + 0, 2);
     strncpy(s + 8, _m + 3, 2);
     strncpy(s + 10, _m + 6, 2);
@@ -41,6 +52,7 @@ void _build_name(char * s)
 
 
 
+// display out button
 void _act_do()
 {
     char_out.writeValue("do_ok");
@@ -51,6 +63,7 @@ void _act_do()
 
 
 
+// wi-fi out button
 void _act_wo()
 {
     char_out.writeValue("wo_ok");
@@ -85,8 +98,6 @@ void _act_wi()
 
 void _act_led()
 {
-    char_out.writeValue("led_ok");
-  
     for (uint8_t i = 0; i < 10; i++)
     {
         _dW(LED_BUILTIN, HIGH);
@@ -98,6 +109,12 @@ void _act_led()
 
     // end up w/ LED on
     _dW(LED_BUILTIN, LOW);
+
+
+    const char * a = "led_ok";
+    char_out.writeValue(a);
+    _SP("<- ");
+    _SPN(a);
 }
 
 
@@ -176,7 +193,11 @@ void loop()
                 // ignore bad commands
                 int len = char_in.valueLength();
                 if (len > 2) continue;
-        
+
+
+                // ---------------------------
+                // all commands have length 2
+                // ---------------------------
         
                 // get command and parse it
                 char v[10] = {0};
