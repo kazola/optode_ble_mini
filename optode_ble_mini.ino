@@ -25,9 +25,9 @@
 #define _SP                   Serial.print
 #define _SPN                  Serial.println
 #define _dW                   digitalWrite
-#define _SERIAL_INSTALLING_   0
+#define _SERIAL_FIELD_WORK_   0
 #define _SERIAL_DEVELOPING_   1
-#define _SERIAL_ENABLE        _SERIAL_DEVELOPING_
+#define _SERIAL_ENABLE        _SERIAL_FIELD_WORK_
 
 
 
