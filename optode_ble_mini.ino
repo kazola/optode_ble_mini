@@ -14,6 +14,21 @@
 #include <ArduinoBLE.h>
 
 
+// pinout
+//                   ___
+//                  |USB|
+//                ---------               
+// di ---> a0 d0 |         | 5v
+// wi ---> a1 d1 |         | gnd
+//         a2 d2 |         | 3v3
+//         a3 d3 |         | d10 ---> do
+//         a4 d4 |         | d9  ---> wo
+//         a5 d5 |         | d8
+//            d6 |         | d7
+//                ---------
+
+
+
 // pins
 #define PIN_DISPLAY_OUT   D10
 #define PIN_WIFI_OUT      D9
@@ -79,8 +94,8 @@ void _act_di()
     int a = analogRead(PIN_DISPLAY_IN);
     _SP("adc display value: ");
     _SPN(a);
-    if (a > 512) char_out.writeValue("dis_on");
-    else char_out.writeValue("dis_off");
+    if (a > 512) char_out.writeValue("di_on");
+    else char_out.writeValue("di_of");
 }
 
 
@@ -90,8 +105,8 @@ void _act_wi()
     int a = analogRead(PIN_WIFI_IN);
     _SP("adc display value: ");
     _SPN(a);
-    if (a > 512) char_out.writeValue("wif_on");
-    else char_out.writeValue("wif_off");
+    if (a > 512) char_out.writeValue("wi_on");
+    else char_out.writeValue("wi_of");
 }
 
 
@@ -111,7 +126,7 @@ void _act_led()
     _dW(LED_BUILTIN, LOW);
 
 
-    const char * a = "led_ok";
+    const char * a = "le_ok";
     char_out.writeValue(a);
     _SP("<- ");
     _SPN(a);
@@ -211,23 +226,26 @@ void loop()
                 {
                     _act_do();
                 }
+
                 if (!strncmp("wo", v, len))
                 {
                     _act_wo();
                 }
+                
                 if (!strncmp("di", v, len))
                 {
                     _act_di();
                 }
+                
                 if (!strncmp("wi", v, len))
                 {
                     _act_wi();
                 }
-                if (!strncmp("l", v, 1))
+                
+                if (!strncmp("le", v, len))
                 {
                     _act_led();
                 }
-                
             }            
         }
 
