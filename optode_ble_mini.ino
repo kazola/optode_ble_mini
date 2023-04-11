@@ -68,7 +68,7 @@ void _build_name(char * s)
 
 
 
-// display out button
+// display out button is active high
 void _act_do()
 {
     char_out.writeValue("do_ok");
@@ -79,13 +79,13 @@ void _act_do()
 
 
 
-// wi-fi out button
+// wi-fi out button is active low
 void _act_wo()
 {
     char_out.writeValue("wo_ok");
-    _dW(PIN_WIFI_OUT, 1);
-    delay(100);
     _dW(PIN_WIFI_OUT, 0);
+    delay(100);
+    _dW(PIN_WIFI_OUT, 1);
 }
 
 
@@ -142,10 +142,17 @@ void setup()
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(PIN_DISPLAY_OUT, OUTPUT);
     pinMode(PIN_WIFI_OUT, OUTPUT);
-    
 
-    // serial ON when at computer, OFF at field
-    #if _SERIAL_ENABLE == 1
+
+
+    // default states for buttons
+    _dW(PIN_DISPLAY_OUT, 0);
+    _dW(PIN_WIFI_OUT, 1);
+
+
+
+    // serial 1 when _SERIAL_DEVELOPING_, 0 when _SERIAL_FIELD_WORK_
+    #if _SERIAL_ENABLE == _SERIAL_FIELD_WORK_
         Serial.begin(9600);
         while (!Serial);
     #endif
@@ -170,6 +177,7 @@ void setup()
 
     // CONN (* 1.25) -> 800 = 1s, 100 = 125 ms
     BLE.setConnectionInterval(100, 100);
+
 
 
     // ADV (* 0.625) -> 320 = 200 ms
