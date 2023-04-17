@@ -38,12 +38,12 @@
 
 
 // macros
-#define _SP                   Serial.print
-#define _SPN                  Serial.println
-#define _dW                   digitalWrite
-#define _SERIAL_FIELD_WORK_   0
-#define _SERIAL_DEVELOPING_   1
-#define _SERIAL_ENABLE        _SERIAL_FIELD_WORK_
+#define _SP                     Serial.print
+#define _SPN                    Serial.println
+#define _dW                     digitalWrite
+#define _SERIAL_FIELD_WORK_     0
+#define _SERIAL_DEVELOPING_     1
+#define _SERIAL_ENABLE_         _SERIAL_FIELD_WORK_
 
 
 
@@ -71,10 +71,10 @@ void _build_name(char * s)
 // display out button is active high
 void _act_do()
 {
-    char_out.writeValue("do_ok");
     _dW(PIN_DISPLAY_OUT, 1);
     delay(3000);
     _dW(PIN_DISPLAY_OUT, 0);
+    char_out.writeValue("do_ok");
 }
 
 
@@ -82,11 +82,23 @@ void _act_do()
 // wi-fi out button is active low
 void _act_wo()
 {
-    char_out.writeValue("wo_ok");
     _dW(PIN_WIFI_OUT, 0);
     delay(100);
     _dW(PIN_WIFI_OUT, 1);
+    char_out.writeValue("wo_ok");
 }
+
+
+
+// display button but quicker to make wheels scan
+void _act_wheel()
+{
+    _dW(PIN_DISPLAY_OUT, 1);
+    delay(100);
+    _dW(PIN_DISPLAY_OUT, 0);
+    char_out.writeValue("wh_ok");
+}
+
 
 
 
@@ -135,6 +147,19 @@ void _act_led()
 
 
 
+static void _leds_used_for_debug()
+{
+    while (1)
+    {
+      _dW(LED_BUILTIN, 1);
+      delay(1000);
+      _dW(LED_BUILTIN, 0);
+      delay(1000);
+    }
+}
+
+
+
 void setup()
 {
 
@@ -151,11 +176,12 @@ void setup()
 
 
 
-    // serial 1 when _SERIAL_DEVELOPING_, 0 when _SERIAL_FIELD_WORK_
-    #if _SERIAL_ENABLE == _SERIAL_FIELD_WORK_
+    #if _SERIAL_ENABLE_ == _SERIAL_DEVELOPING_
+        // we DON'T want to enter here when _SERIAL_FIELD_WORK_    
         Serial.begin(9600);
         while (!Serial);
     #endif
+
 
 
     // hardware check
@@ -254,6 +280,11 @@ void loop()
                 if (!strncmp("le", v, len))
                 {
                     _act_led();
+                }
+
+                if (!strncmp("wh", v, len))
+                {
+                    _act_wheel();
                 }
             }            
         }
