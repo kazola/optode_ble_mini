@@ -54,6 +54,21 @@ BLECharacteristic  char_in("2325", BLERead | BLEWrite, 10);
 
 
 
+static void _mini_led_on()
+{
+    // LED in the black mini board is active LOW
+    _dW(LED_BUILTIN, LOW);
+}
+
+
+
+static void _mini_led_off()
+{
+    _dW(LED_BUILTIN, HIGH);  
+}
+
+
+
 void _build_name(char * s)
 {
     const char * _m = BLE.address().c_str();
@@ -128,16 +143,16 @@ void _act_led()
 {
     for (uint8_t i = 0; i < 10; i++)
     {
-        _dW(LED_BUILTIN, HIGH);
+        _mini_led_on();
         delay(100);
-        _dW(LED_BUILTIN, LOW);
+        _mini_led_off();
         delay(100);
     }
     
 
     // end up w/ LED on
-    _dW(LED_BUILTIN, LOW);
-
+    _mini_led_on();
+    
 
     const char * a = "le_ok";
     char_out.writeValue(a);
@@ -151,10 +166,23 @@ static void _leds_used_for_debug()
 {
     while (1)
     {
-      _dW(LED_BUILTIN, 1);
+      _mini_led_on();
       delay(1000);
-      _dW(LED_BUILTIN, 0);
+      _mini_led_off();
       delay(1000);
+    }
+}
+
+
+
+static void _leds_boot_sequence()
+{
+    for(uint8_t i = 0; i < 10; i++)
+    {
+      _mini_led_on();
+      delay(100);
+      _mini_led_off();
+      delay(100);      
     }
 }
 
@@ -194,6 +222,9 @@ void setup()
     _SPN(BLE.address());
 
 
+    // boot visual hint
+    _leds_boot_sequence();
+
 
     // services and characteristics
     svc.addCharacteristic(char_out);
@@ -229,7 +260,7 @@ void loop()
 
 
         // on BLE connection, LED = LOW = shining
-        _dW(LED_BUILTIN, LOW);
+        _mini_led_on();
 
 
         // -----------------
@@ -293,6 +324,7 @@ void loop()
         // BLE disconnection
         _SP("Disconnected from central ");
         _SPN(central.address());
-        _dW(LED_BUILTIN, HIGH);
+        _mini_led_off();
+
   }
 }
