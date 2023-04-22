@@ -4,8 +4,11 @@
 //     - Arduino IDE
 //     - preferences, add board sources
 //         https://files.seeedstudio.com/arduino/package_seeeduino_boards_index.json
-//     - install board seeed nrf52 mbed
+//     - boards manager / install board seeed nrf52 mbed-enabled
+//     - tools / board / select it
 //     - install library ArduinoBLE
+//     - tools / port
+//     - you may also need to install adafruit-nrfutil
 // -----------------------------------------------------------------------------------
 
 
