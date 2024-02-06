@@ -2,12 +2,14 @@
 // src: https://wiki.seeedstudio.com/XIAO_BLE
 // needs installing
 //     - Arduino IDE
-//     - preferences, add board sources
+//     - files / preferences, add board sources
 //         https://files.seeedstudio.com/arduino/package_seeeduino_boards_index.json
-//     - boards manager / install board seeed nrf52 mbed-enabled
-//     - tools / board / select it
-//     - install library ArduinoBLE
+//     - tools / board / boards manager / install board seeed nrf52 mbed-enabled
+//     - tools / board / select Seeed Xiao BLE - nrf52840 (dont choose sense one)
+//     - library manager / install library ArduinoBLE
+//     - connect the board to your computer via USB
 //     - tools / port
+//     - and you flash the optode_ble_mini.ino
 //     - you may also need to install adafruit-nrfutil
 // -----------------------------------------------------------------------------------
 
